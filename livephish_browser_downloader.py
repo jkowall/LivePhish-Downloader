@@ -10,6 +10,60 @@ License: Apache 2.0
 
 __version__ = "1.0.0"
 
+import sys
+import subprocess
+
+def check_dependencies():
+    """Check for required dependencies and offer to install them."""
+    missing = []
+    
+    try:
+        import selenium
+    except ImportError:
+        missing.append("selenium")
+    
+    try:
+        import requests
+    except ImportError:
+        missing.append("requests")
+    
+    try:
+        import webdriver_manager
+    except ImportError:
+        missing.append("webdriver-manager")
+    
+    if missing:
+        print("=" * 60)
+        print("MISSING DEPENDENCIES")
+        print("=" * 60)
+        print(f"\nThe following packages are not installed: {', '.join(missing)}")
+        print("\nTo install them, run:")
+        print(f"\n    pip install {' '.join(missing)}")
+        print("\nOr set up a virtual environment first:")
+        print("\n    python3 -m venv venv")
+        print("    source venv/bin/activate  # Linux/macOS")
+        print("    venv\\Scripts\\activate     # Windows")
+        print(f"    pip install {' '.join(missing)}")
+        print()
+        
+        response = input("Would you like to install them now? [y/N]: ").strip().lower()
+        if response == 'y':
+            print("\nInstalling dependencies...")
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing)
+                print("\n✓ Dependencies installed successfully!")
+                print("Please restart the script.\n")
+            except subprocess.CalledProcessError as e:
+                print(f"\n✗ Installation failed: {e}")
+                print("Please install manually using the commands above.\n")
+            sys.exit(0)
+        else:
+            print("\nPlease install the dependencies and try again.")
+            sys.exit(1)
+
+# Check dependencies before importing
+check_dependencies()
+
 import json
 import os
 import time
