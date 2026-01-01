@@ -37,29 +37,70 @@ def check_dependencies():
         print("MISSING DEPENDENCIES")
         print("=" * 60)
         print(f"\nThe following packages are not installed: {', '.join(missing)}")
-        print("\nTo install them, run:")
-        print(f"\n    pip install {' '.join(missing)}")
-        print("\nOr set up a virtual environment first:")
-        print("\n    python3 -m venv venv")
-        print("    source venv/bin/activate  # Linux/macOS")
-        print("    venv\\Scripts\\activate     # Windows")
-        print(f"    pip install {' '.join(missing)}")
+        print("\nHow would you like to proceed?\n")
+        print("  1) Install directly with pip (quick, system-wide)")
+        print("  2) Create virtual environment and install (recommended)")
+        print("  3) Exit and install manually")
         print()
         
-        response = input("Would you like to install them now? [y/N]: ").strip().lower()
-        if response == 'y':
-            print("\nInstalling dependencies...")
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing)
-                print("\n✓ Dependencies installed successfully!")
-                print("Please restart the script.\n")
-            except subprocess.CalledProcessError as e:
-                print(f"\n✗ Installation failed: {e}")
-                print("Please install manually using the commands above.\n")
-            sys.exit(0)
-        else:
-            print("\nPlease install the dependencies and try again.")
-            sys.exit(1)
+        while True:
+            response = input("Enter choice [1/2/3]: ").strip()
+            
+            if response == '1':
+                # Direct pip install
+                print("\nInstalling dependencies...")
+                try:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing)
+                    print("\n✓ Dependencies installed successfully!")
+                    print("Please restart the script.\n")
+                except subprocess.CalledProcessError as e:
+                    print(f"\n✗ Installation failed: {e}")
+                    print("Try option 2 (venv) or install manually.\n")
+                sys.exit(0)
+                
+            elif response == '2':
+                # Create venv and install
+                import os
+                venv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "venv")
+                
+                print(f"\nCreating virtual environment at: {venv_path}")
+                try:
+                    subprocess.check_call([sys.executable, "-m", "venv", venv_path])
+                    print("✓ Virtual environment created!")
+                    
+                    # Determine pip path in venv
+                    if sys.platform == "win32":
+                        pip_path = os.path.join(venv_path, "Scripts", "pip")
+                        activate_cmd = f"{venv_path}\\Scripts\\activate"
+                    else:
+                        pip_path = os.path.join(venv_path, "bin", "pip")
+                        activate_cmd = f"source {venv_path}/bin/activate"
+                    
+                    print(f"\nInstalling dependencies in venv...")
+                    subprocess.check_call([pip_path, "install"] + missing)
+                    print("\n✓ Dependencies installed successfully!")
+                    print("\nTo use the script, first activate the virtual environment:")
+                    print(f"\n    {activate_cmd}")
+                    print("\nThen run the script:")
+                    print("\n    python livephish_browser_downloader.py\n")
+                    
+                except subprocess.CalledProcessError as e:
+                    print(f"\n✗ Setup failed: {e}")
+                    print("Please install manually.\n")
+                sys.exit(0)
+                
+            elif response == '3':
+                print("\nTo install manually, run:")
+                print(f"\n    pip install {' '.join(missing)}")
+                print("\nOr with a virtual environment:")
+                print("\n    python3 -m venv venv")
+                print("    source venv/bin/activate  # Linux/macOS")
+                print("    venv\\Scripts\\activate     # Windows")
+                print(f"    pip install {' '.join(missing)}\n")
+                sys.exit(1)
+                
+            else:
+                print("Please enter 1, 2, or 3.")
 
 # Check dependencies before importing
 check_dependencies()
