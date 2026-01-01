@@ -68,16 +68,16 @@ def check_dependencies():
                     subprocess.check_call([sys.executable, "-m", "venv", venv_path])
                     print("✓ Virtual environment created!")
                     
-                    # Determine pip path in venv
+                    # Determine python path in venv (use python -m pip for reliability)
                     if sys.platform == "win32":
-                        pip_path = os.path.join(venv_path, "Scripts", "pip")
+                        python_path = os.path.join(venv_path, "Scripts", "python")
                         activate_cmd = f"{venv_path}\\Scripts\\activate"
                     else:
-                        pip_path = os.path.join(venv_path, "bin", "pip")
+                        python_path = os.path.join(venv_path, "bin", "python")
                         activate_cmd = f"source {venv_path}/bin/activate"
                     
                     print(f"\nInstalling dependencies in venv...")
-                    subprocess.check_call([pip_path, "install"] + missing)
+                    subprocess.check_call([python_path, "-m", "pip", "install"] + missing)
                     print("\n✓ Dependencies installed successfully!")
                     print("\nTo use the script, first activate the virtual environment:")
                     print(f"\n    {activate_cmd}")
