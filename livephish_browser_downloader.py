@@ -125,6 +125,17 @@ class AutomatedDownloader:
         os.makedirs(output_dir, exist_ok=True)
         self.driver = None
         self.downloaded_urls = set()
+    
+    def browser_is_open(self):
+        """Check if the browser is still open."""
+        if not self.driver:
+            return False
+        try:
+            # Try to access the window handle - will fail if browser is closed
+            _ = self.driver.window_handles
+            return True
+        except Exception:
+            return False
         
     def setup_browser(self):
         """Initialize browser with network monitoring"""
@@ -147,10 +158,15 @@ class AutomatedDownloader:
         print("Browser ready!")
         
     def login_and_navigate(self):
-        """Navigate to login page and wait for user to log in"""
+        """Navigate to login page and wait for user to log in. Returns False if browser closed."""
         login_url = "https://plus.livephish.com/login"
         print(f"\nNavigating to login page: {login_url}")
-        self.driver.get(login_url)
+        
+        try:
+            self.driver.get(login_url)
+        except Exception:
+            print("\n✗ Browser was closed. Exiting.")
+            return False
         
         print("\n" + "="*60)
         print("PLEASE LOG IN to LivePhish in the browser window")
@@ -158,10 +174,21 @@ class AutomatedDownloader:
         
         input("\nPress ENTER after you've logged in...")
         
+        # Check if browser is still open
+        if not self.browser_is_open():
+            print("\n✗ Browser was closed. Exiting.")
+            return False
+        
         # Navigate to stash
         stash_url = "https://plus.livephish.com/stash"
         print(f"\nNavigating to your Stash: {stash_url}")
-        self.driver.get(stash_url)
+        
+        try:
+            self.driver.get(stash_url)
+        except Exception:
+            print("\n✗ Browser was closed. Exiting.")
+            return False
+            
         time.sleep(3)
         
         print("\n" + "="*60)
@@ -169,6 +196,13 @@ class AutomatedDownloader:
         print("="*60)
         
         input("\nPress ENTER when viewing the playlist with track list visible...")
+        
+        # Check if browser is still open after playlist selection
+        if not self.browser_is_open():
+            print("\n✗ Browser was closed. Exiting.")
+            return False
+        
+        return True
 
     def clear_logs(self):
         """Clear performance logs"""
@@ -384,7 +418,8 @@ class AutomatedDownloader:
         self.setup_browser()
         
         try:
-            self.login_and_navigate()
+            if not self.login_and_navigate():
+                return
             
             # Give page time to fully load
             time.sleep(3)
@@ -534,7 +569,8 @@ def main():
     
     if args.interactive:
         downloader.setup_browser()
-        downloader.login_and_navigate()
+        if not downloader.login_and_navigate():
+            return
         downloader.download_interactive()
     else:
         downloader.download_playlist_auto()
