@@ -2,7 +2,13 @@
 """
 LivePhish Automated Browser Downloader
 Automatically clicks through tracks and downloads them.
+
+Repository: https://github.com/jkowall/LivePhish-Downloader
+Author: jkowall
+License: Apache 2.0
 """
+
+__version__ = "1.0.0"
 
 import json
 import os

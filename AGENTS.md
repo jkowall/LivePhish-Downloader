@@ -2,6 +2,8 @@
 
 Instructions for AI coding agents working on this repository.
 
+**Repository**: https://github.com/jkowall/LivePhish-Downloader
+
 ## Project Overview
 
 LivePhish Downloader is a browser-automation tool for downloading LivePhish playlists and Stash content. It uses Selenium for browser automation and captures authenticated stream URLs from network traffic.

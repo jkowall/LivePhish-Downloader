@@ -25,8 +25,8 @@ A browser-automation tool for downloading your LivePhish playlists and Stash con
 brew install python
 
 # Clone the repository
-git clone https://github.com/yourusername/livephish.git
-cd livephish
+git clone https://github.com/jkowall/LivePhish-Downloader.git
+cd LivePhish-Downloader
 
 # Create virtual environment
 python3 -m venv venv
@@ -44,8 +44,8 @@ sudo apt update
 sudo apt install python3 python3-venv python3-pip google-chrome-stable
 
 # Clone the repository
-git clone https://github.com/yourusername/livephish.git
-cd livephish
+git clone https://github.com/jkowall/LivePhish-Downloader.git
+cd LivePhish-Downloader
 
 # Create virtual environment
 python3 -m venv venv
@@ -65,8 +65,8 @@ sudo dnf install python3 python3-pip
 sudo dnf install google-chrome-stable
 
 # Clone the repository
-git clone https://github.com/yourusername/livephish.git
-cd livephish
+git clone https://github.com/jkowall/LivePhish-Downloader.git
+cd LivePhish-Downloader
 
 # Create virtual environment
 python3 -m venv venv
@@ -85,8 +85,8 @@ pip install selenium webdriver-manager requests
 # Install Chrome from https://www.google.com/chrome/
 
 # Clone the repository (or download ZIP)
-git clone https://github.com/yourusername/livephish.git
-cd livephish
+git clone https://github.com/jkowall/LivePhish-Downloader.git
+cd LivePhish-Downloader
 
 # Create virtual environment
 python -m venv venv
