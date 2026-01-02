@@ -37,6 +37,15 @@ pip install selenium webdriver-manager requests
 - Add docstrings to functions and classes
 - Keep functions focused and modular
 
+## Documentation
+
+**Always update documentation when making changes:**
+
+- Update `README.md` when adding/changing CLI options or features
+- Update docstrings in the script when changing function behavior
+- Keep usage examples current with actual script behavior
+- Update version number in script when making significant changes
+
 ## Git & Code Signing
 
 **All commits MUST be GPG signed.**

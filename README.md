@@ -122,12 +122,20 @@ python livephish_browser_downloader.py
 ### Options
 
 ```bash
+# Download all playlists automatically
+python livephish_browser_downloader.py --all
+
+# Download all from a specific stash tab (webcasts, shows, or playlists)
+python livephish_browser_downloader.py --all --type shows
+
 # Custom output directory
 python livephish_browser_downloader.py --output my_music
 
 # Interactive mode (manual track selection)
 python livephish_browser_downloader.py --interactive
 ```
+
+When using `--all`, each playlist is saved to its own subdirectory (e.g., `downloads/Winter 2026/`).
 
 ## File Naming
 
