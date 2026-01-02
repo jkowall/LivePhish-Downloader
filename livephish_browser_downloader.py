@@ -703,7 +703,7 @@ class AutomatedDownloader:
                 
                 # Re-find playlists (page may have changed)
                 if playlist_idx > 0:
-                    if not self.navigate_to_stash():
+                    if not self.navigate_to_stash(tab_type=tab_type):
                         print("  ✗ Could not navigate back to stash")
                         continue
                     time.sleep(2)
