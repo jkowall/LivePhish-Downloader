@@ -8,7 +8,7 @@ Author: jkowall
 License: Apache 2.0
 """
 
-__version__ = "1.0.0"
+__version__ = "1.2.0"
 
 import sys
 import subprocess
@@ -156,8 +156,8 @@ class AutomatedDownloader:
         )
         self.driver.set_window_size(1400, 900)
         print("Browser ready!")
-        
-    def login_and_navigate(self):
+    
+    def login_only(self):
         """Navigate to login page and wait for user to log in. Returns False if browser closed."""
         login_url = "https://plus.livephish.com/login"
         print(f"\nNavigating to login page: {login_url}")
@@ -179,7 +179,62 @@ class AutomatedDownloader:
             print("\n✗ Browser was closed. Exiting.")
             return False
         
-        # Navigate to stash
+        return True
+    
+    def select_stash_tab(self, tab_type="webcasts"):
+        """Select a specific tab on the stash page: 'webcasts', 'shows', or 'playlists'."""
+        tab_map = {
+            "webcasts": ["My webcasts", "webcasts", "Webcasts"],
+            "shows": ["Shows and albums", "shows", "Shows", "albums", "Albums"],
+            "playlists": ["My playlists", "playlists", "Playlists"]
+        }
+        
+        search_terms = tab_map.get(tab_type, tab_map["webcasts"])
+        print(f"\n  Selecting tab: {tab_type}")
+        
+        # Try to find and click the tab
+        for term in search_terms:
+            try:
+                # Try finding by text content
+                elements = self.driver.find_elements(By.XPATH, f"//*[contains(text(), '{term}')]")
+                for el in elements:
+                    if el.is_displayed():
+                        try:
+                            el.click()
+                            print(f"  ✓ Clicked tab: {term}")
+                            time.sleep(2)
+                            return True
+                        except:
+                            continue
+            except:
+                continue
+        
+        # Try by aria-label or other attributes
+        selectors = [
+            f"[aria-label*='{tab_type}' i]",
+            f"button:contains('{tab_type}')",
+            f"a[href*='{tab_type}']",
+            f"[class*='tab'][class*='{tab_type}' i]",
+            f"[role='tab']"
+        ]
+        
+        for selector in selectors:
+            try:
+                elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                for el in elements:
+                    if el.is_displayed() and tab_type.lower() in el.text.lower():
+                        el.click()
+                        print(f"  ✓ Clicked tab via selector")
+                        time.sleep(2)
+                        return True
+            except:
+                continue
+        
+        print(f"  ! Could not find tab: {tab_type}, using default view")
+        return False
+    
+    def navigate_to_stash(self, tab_type=None):
+        """Navigate to the stash page. Optionally select a specific tab. Returns False if browser closed."""
         stash_url = "https://plus.livephish.com/stash"
         print(f"\nNavigating to your Stash: {stash_url}")
         
@@ -190,6 +245,24 @@ class AutomatedDownloader:
             return False
             
         time.sleep(3)
+        
+        if not self.browser_is_open():
+            print("\n✗ Browser was closed. Exiting.")
+            return False
+        
+        # Select specific tab if requested
+        if tab_type:
+            self.select_stash_tab(tab_type)
+        
+        return True
+        
+    def login_and_navigate(self):
+        """Navigate to login page, log in, and select a playlist. Returns False if browser closed."""
+        if not self.login_only():
+            return False
+        
+        if not self.navigate_to_stash():
+            return False
         
         print("\n" + "="*60)
         print("Click on your playlist to open it")
@@ -327,6 +400,67 @@ class AutomatedDownloader:
                     class_name = el.get_attribute('class')
                     tag = el.tag_name
                     print(f"    {i+1}. <{tag}> class='{class_name[:60]}...'")
+        except:
+            pass
+        
+        return []
+    
+    def find_playlist_elements(self):
+        """Find all playlist elements on the stash page. Returns list of (element, name) tuples."""
+        print("\nLooking for playlist elements...")
+        
+        # LivePhish stash page selectors for playlists
+        selectors = [
+            # Playlist cards/items
+            "[class*='PlaylistCard']",
+            "[class*='playlist-card']",
+            "[class*='StashItem']",
+            "[class*='stash-item']",
+            "[class*='Playlist'] a",
+            "[class*='playlist'] a",
+            # Grid/list items that might be playlists
+            "[class*='stash'] [class*='card']",
+            "[class*='Stash'] [class*='Card']",
+            "[class*='library'] [class*='item']",
+            "[class*='Library'] [class*='Item']",
+            # Generic clickable playlist elements
+            "a[href*='/playlist/']",
+            "a[href*='/stash/']",
+            "[data-playlist-id]",
+            "[data-playlistid]",
+        ]
+        
+        for selector in selectors:
+            try:
+                elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                if elements:
+                    print(f"  Found {len(elements)} playlist elements with: {selector}")
+                    # Extract name for each playlist
+                    playlists = []
+                    for el in elements:
+                        try:
+                            name = el.text.strip().split('\n')[0][:50] if el.text else "Unnamed Playlist"
+                            playlists.append((el, name))
+                        except:
+                            playlists.append((el, "Unnamed Playlist"))
+                    return playlists
+            except:
+                continue
+        
+        # Debug: try to find any clickable items
+        print("\n  DEBUG: Looking for playlist-like elements...")
+        try:
+            all_playlist_elements = self.driver.find_elements(
+                By.XPATH, 
+                "//*[contains(@class, 'playlist') or contains(@class, 'Playlist') or contains(@class, 'stash') or contains(@class, 'Stash')]"
+            )
+            if all_playlist_elements:
+                print(f"  Found {len(all_playlist_elements)} elements with playlist/stash in class:")
+                for i, el in enumerate(all_playlist_elements[:5]):
+                    class_name = el.get_attribute('class') or ''
+                    tag = el.tag_name
+                    text = el.text[:30] if el.text else '(no text)'
+                    print(f"    {i+1}. <{tag}> class='{class_name[:40]}' text='{text}'")
         except:
             pass
         
@@ -525,6 +659,167 @@ class AutomatedDownloader:
             if self.driver:
                 self.driver.quit()
 
+    def download_all_playlists(self, tab_type=None):
+        """Download all tracks from all playlists in the stash"""
+        self.setup_browser()
+        base_output_dir = self.output_dir
+        
+        try:
+            # Login and navigate to stash
+            if not self.login_only():
+                return
+            
+            if not self.navigate_to_stash(tab_type=tab_type):
+                return
+            
+            # Find all playlists
+            playlists = self.find_playlist_elements()
+            
+            if not playlists:
+                print("\nCould not find any playlists. Please try single playlist mode.")
+                print("Run: python livephish_browser_downloader.py")
+                return
+            
+            total_playlists = len(playlists)
+            print(f"\nFound {total_playlists} playlists")
+            print("="*60)
+            print("STARTING DOWNLOAD OF ALL PLAYLISTS")
+            print("="*60)
+            
+            all_results = []
+            
+            for playlist_idx, (playlist_el, playlist_name) in enumerate(playlists):
+                print(f"\n{'='*60}")
+                print(f"PLAYLIST [{playlist_idx + 1}/{total_playlists}]: {playlist_name}")
+                print("="*60)
+                
+                # Create subdirectory for this playlist
+                safe_name = re.sub(r'[<>:"/\\|?*]', '_', playlist_name).strip()
+                if not safe_name:
+                    safe_name = f"playlist_{playlist_idx + 1}"
+                playlist_dir = os.path.join(base_output_dir, safe_name)
+                os.makedirs(playlist_dir, exist_ok=True)
+                self.output_dir = playlist_dir
+                
+                # Re-find playlists (page may have changed)
+                if playlist_idx > 0:
+                    if not self.navigate_to_stash():
+                        print("  ✗ Could not navigate back to stash")
+                        continue
+                    time.sleep(2)
+                    playlists = self.find_playlist_elements()
+                    if playlist_idx >= len(playlists):
+                        print(f"  ✗ Playlist {playlist_idx + 1} no longer found")
+                        continue
+                    playlist_el, _ = playlists[playlist_idx]
+                
+                # Click on playlist
+                try:
+                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", playlist_el)
+                    time.sleep(0.5)
+                    if not self.click_element_safely(playlist_el):
+                        print(f"  ✗ Could not click playlist: {playlist_name}")
+                        all_results.append((playlist_name, 0, 0))
+                        continue
+                except Exception as e:
+                    print(f"  ✗ Error clicking playlist: {e}")
+                    all_results.append((playlist_name, 0, 0))
+                    continue
+                
+                time.sleep(3)  # Wait for playlist to load
+                
+                if not self.browser_is_open():
+                    print("\n✗ Browser was closed. Exiting.")
+                    break
+                
+                # Find and download tracks
+                tracks = self.find_track_elements()
+                if not tracks:
+                    tracks = self.find_play_buttons()
+                
+                if not tracks:
+                    print(f"  No tracks found in playlist: {playlist_name}")
+                    all_results.append((playlist_name, 0, 0))
+                    continue
+                
+                total_tracks = len(tracks)
+                print(f"  Found {total_tracks} tracks in this playlist")
+                
+                successful = 0
+                failed = 0
+                track_num = 0
+                
+                while track_num < total_tracks:
+                    # Re-find tracks each time (DOM may have changed)
+                    tracks = self.find_track_elements()
+                    if not tracks:
+                        tracks = self.find_play_buttons()
+                    
+                    if track_num >= len(tracks):
+                        print(f"  Track {track_num + 1} no longer found, moving to next playlist...")
+                        break
+                    
+                    track = tracks[track_num]
+                    print(f"\n  [{track_num + 1}/{total_tracks}] Processing track...")
+                    
+                    self.clear_logs()
+                    
+                    # Get track name
+                    track_name = None
+                    try:
+                        track_name = track.text.split('\n')[0][:50]
+                        if track_name:
+                            print(f"    Track: {track_name}")
+                    except:
+                        pass
+                    
+                    # Click track
+                    try:
+                        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", track)
+                        time.sleep(0.5)
+                        ActionChains(self.driver).double_click(track).perform()
+                    except:
+                        if not self.click_element_safely(track):
+                            failed += 1
+                            track_num += 1
+                            continue
+                    
+                    time.sleep(2)
+                    url = self.capture_stream_url(timeout=15)
+                    
+                    if url:
+                        filename = self.extract_filename(url, track_num + 1, track_name)
+                        if self.download_file(url, filename):
+                            successful += 1
+                        else:
+                            failed += 1
+                    else:
+                        print(f"    ✗ No stream URL captured")
+                        failed += 1
+                    
+                    track_num += 1
+                    time.sleep(1)
+                
+                all_results.append((playlist_name, successful, failed))
+                print(f"\n  Playlist complete: {successful} successful, {failed} failed")
+            
+            # Final summary
+            print("\n" + "="*60)
+            print("ALL PLAYLISTS DOWNLOAD COMPLETE")
+            print("="*60)
+            total_successful = sum(r[1] for r in all_results)
+            total_failed = sum(r[2] for r in all_results)
+            print(f"\nSummary:")
+            for name, succ, fail in all_results:
+                print(f"  {name}: {succ} successful, {fail} failed")
+            print(f"\nTotal: {total_successful} successful, {total_failed} failed across {len(all_results)} playlists")
+            print("="*60)
+            
+        finally:
+            print("\nClosing browser...")
+            if self.driver:
+                self.driver.quit()
+
     def download_interactive(self):
         """Fallback interactive mode"""
         track_num = 1
@@ -562,12 +857,18 @@ def main():
     parser = argparse.ArgumentParser(description="LivePhish Automated Downloader")
     parser.add_argument("--output", default="downloads", help="Output directory")
     parser.add_argument("--interactive", action="store_true", help="Use interactive mode")
+    parser.add_argument("--all", action="store_true", dest="download_all",
+                        help="Download all playlists from your stash")
+    parser.add_argument("--type", choices=["webcasts", "shows", "playlists"], default="playlists",
+                        dest="stash_type", help="Which stash tab to use (default: playlists)")
     
     args = parser.parse_args()
     
     downloader = AutomatedDownloader(output_dir=args.output)
     
-    if args.interactive:
+    if args.download_all:
+        downloader.download_all_playlists(tab_type=args.stash_type)
+    elif args.interactive:
         downloader.setup_browser()
         if not downloader.login_and_navigate():
             return
